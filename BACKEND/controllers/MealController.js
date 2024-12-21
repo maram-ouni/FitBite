@@ -4,7 +4,10 @@ const MealController = {
     // Create a new meal
     createMeal: async (req, res) => {
         try {
-            const { mealType, userId, items, totalCalories } = req.body;
+            const { mealType, userId, items } = req.body;
+
+            // Calculate total calories based on count (matches frontend)
+            const totalCalories = items.reduce((sum, item) => sum + (item.calories * item.count), 0);
 
             console.log('Creating meal with data:', { mealType, userId, items, totalCalories });
 
@@ -58,11 +61,33 @@ const MealController = {
                 return res.status(404).json({ message: 'Meal not found' });
             }
 
-            // Add new items to the existing items array
-            meal.items.push(...items);
+            // Merge the existing and new items, ensuring the counts are updated
+            const updatedItems = [...meal.items];
+
+            items.forEach(newItem => {
+                const existingItemIndex = updatedItems.findIndex(item =>
+                    item.itemId === newItem.itemId
+                );
+
+                if (existingItemIndex !== -1) {
+                    // Update existing item
+                    updatedItems[existingItemIndex] = {
+                        ...updatedItems[existingItemIndex],
+                        count: newItem.count,
+                        calories: newItem.calories
+                    };
+                } else {
+                    // Add new item
+                    updatedItems.push(newItem);
+                }
+            });
+
+            meal.items = updatedItems;
 
             // Recalculate total calories
-            meal.totalCalories = meal.items.reduce((sum, item) => sum + (item.calories * item.count), 0);
+            meal.totalCalories = updatedItems.reduce((sum, item) =>
+                sum + (item.calories), 0
+            );
 
             const updatedMeal = await meal.save();
             console.log('Meal updated:', updatedMeal);

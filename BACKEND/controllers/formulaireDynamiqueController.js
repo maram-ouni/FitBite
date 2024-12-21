@@ -23,6 +23,20 @@ exports.createFormulaire = async (req, res) => {
   }
 };
 
+// Obtenir le trimestre pour un utilisateur
+exports.getTrimestreByUser = async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const formulaire = await FormulaireDynamique.findOne({ utilisateur: userId });
+    if (!formulaire) {
+      return res.status(404).send({ message: 'Formulaire not found' });
+    }
+    res.status(200).send({ trimestre: formulaire.trimestre });
+  } catch (error) {
+    res.status(500).send(error);
+  }
+};
+
 // Obtenir tous les formulaires dynamiques
 exports.getFormulaires = async (req, res) => {
   try {

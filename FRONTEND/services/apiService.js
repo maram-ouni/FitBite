@@ -490,8 +490,24 @@ export const getAllSupermarches = async () => {
 };
 
 export const getTrimestreByUser = async (userId) => {
-  const response = await axios.get(`${API_URL}/formulaireDynamique/user/${userId}`);
-  return response.data.trimestre;
+  try {
+    const url = `${API_URL}/formulaireDynamique/user/${userId}`;
+    console.log('Fetching trimestre data from URL:', url); // Log the full URL
+    const response = await axios.get(url);
+    return response.data.trimestre;
+  } catch (error) {
+    console.error('Error fetching trimestre data:', error);
+    if (error.response) {
+      console.error('Response data:', error.response.data);
+      console.error('Response status:', error.response.status);
+      console.error('Response headers:', error.response.headers);
+    } else if (error.request) {
+      console.error('Request data:', error.request);
+    } else {
+      console.error('Error message:', error.message);
+    }
+    throw error;
+  }
 };
 
 export const createMeal = async (mealData) => {

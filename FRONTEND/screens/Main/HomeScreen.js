@@ -73,7 +73,7 @@ const MealItem = ({ title, calories, recommended, items, isExpanded, onToggle, n
             </View>
             <TouchableOpacity
                 onPress={() => navigation.navigate('Ingredients', {
-                    category: title, //selon le bouton appuyé
+                    category: title,
                 })}
             >
                 <Feather name="plus" size={24} color="#006A6A" />
@@ -83,7 +83,15 @@ const MealItem = ({ title, calories, recommended, items, isExpanded, onToggle, n
             <View style={styles.mealItems}>
                 {items.map((item, index) => (
                     <View key={index} style={styles.mealItemRow}>
-                        <Text style={styles.itemText}>{item.name} {item.quantity}</Text>
+                        <View style={styles.itemInfo}>
+                            <Text style={styles.itemName}>{item.name}</Text>
+                            <View style={styles.itemQuantity}>
+                                <Text style={styles.quantityText}>
+                                    {item.count || item.quantity || 1} {/* handle both count and quantity for backwards compatibility */}
+                                    {item.unit || 'g'} {/* display unit if available, default to 'g' */}
+                                </Text>
+                            </View>
+                        </View>
                         <Text style={styles.itemCalories}>{item.calories} Kcal</Text>
                     </View>
                 ))}
@@ -96,14 +104,20 @@ const HomeScreen = ({ navigation }) => {
     const [expandedMeal, setExpandedMeal] = useState('Breakfast');
     const [meals, setMeals] = useState([]);
     const { userId } = useUser(); // Get the current user's ID
+    const [totalCalories, setTotalCalories] = useState(0);
+    const [recommendedCalories, setRecommendedCalories] = useState({});
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [mealsData] = await Promise.all([
+                const [mealsData, recommendations] = await Promise.all([
                     getMealsByUser(userId),
+                    getRecommendedCalories(userId),
                 ]);
                 setMeals(mealsData);
+                setRecommendedCalories(recommendations);
+                const totalCalories = Object.values(recommendations).reduce((sum, calories) => sum + calories, 0);
+                setTotalCalories(totalCalories);
             } catch (error) {
                 console.error('Error fetching data:', error);
             }
@@ -117,24 +131,51 @@ const HomeScreen = ({ navigation }) => {
         return meal ? meal : { items: [], totalCalories: 0 };
     };
 
-    const getRecommendedCalories = (mealType) => {
-        const recommendations = {
-            Breakfast: 450,
-            Lunch: 600,
-            Dinner: 600,
-            Snack: 350,
-        };
+    const getRecommendedCalories = async (userId) => {
+        try {
+            const trimestre = await getTrimestreByUser(userId);
+            console.log('Trimestre:', trimestre); // Log the trimestre value
+            const recommendations = {
+                1: {
+                    Breakfast: 400,
+                    Lunch: 500,
+                    Dinner: 500,
+                    Snack: 300,
+                },
+                2: {
+                    Breakfast: 450,
+                    Lunch: 600,
+                    Dinner: 600,
+                    Snack: 350,
+                },
+                3: {
+                    Breakfast: 500,
+                    Lunch: 650,
+                    Dinner: 650,
+                    Snack: 400,
+                },
+            };
 
-        return recommendations[mealType] || 0;
+            return recommendations[trimestre];
+        } catch (error) {
+            console.error('Error fetching trimestre data:', error);
+            return {
+                Breakfast: 0,
+                Lunch: 0,
+                Dinner: 0,
+                Snack: 0,
+            };
+        }
     };
 
     const eatenCalories = meals.reduce((sum, meal) => sum + meal.totalCalories, 0);
-    const totalCalories = Object.values({
-        Breakfast: 450,
-        Lunch: 600,
-        Dinner: 600,
-        Snack: 350,
-    }).reduce((sum, calories) => sum + calories, 0);
+
+    const calculateTotalCalories = async (userId) => {
+        const recommendations = await getRecommendedCalories(userId);
+        const totalCalories = Object.values(recommendations).reduce((sum, calories) => sum + calories, 0);
+        console.log(totalCalories);
+        return totalCalories;
+    };
     console.log(totalCalories);
 
     return (
@@ -163,11 +204,10 @@ const HomeScreen = ({ navigation }) => {
                         </View>
                     </View>
 
-
                     <MealItem
                         title="Breakfast"
                         calories={getMealData('Breakfast').totalCalories}
-                        recommended={getRecommendedCalories('Breakfast')}
+                        recommended={recommendedCalories.Breakfast}
                         items={getMealData('Breakfast').items}
                         isExpanded={expandedMeal === 'Breakfast'}
                         onToggle={() => setExpandedMeal(expandedMeal === 'Breakfast' ? null : 'Breakfast')}
@@ -176,7 +216,7 @@ const HomeScreen = ({ navigation }) => {
                     <MealItem
                         title="Lunch"
                         calories={getMealData('Lunch').totalCalories}
-                        recommended={getRecommendedCalories('Lunch')}
+                        recommended={recommendedCalories.Lunch}
                         items={getMealData('Lunch').items}
                         isExpanded={expandedMeal === 'Lunch'}
                         onToggle={() => setExpandedMeal(expandedMeal === 'Lunch' ? null : 'Lunch')}
@@ -185,7 +225,7 @@ const HomeScreen = ({ navigation }) => {
                     <MealItem
                         title="Dinner"
                         calories={getMealData('Dinner').totalCalories}
-                        recommended={getRecommendedCalories('Dinner')}
+                        recommended={recommendedCalories.Dinner}
                         items={getMealData('Dinner').items}
                         isExpanded={expandedMeal === 'Dinner'}
                         onToggle={() => setExpandedMeal(expandedMeal === 'Dinner' ? null : 'Dinner')}
@@ -194,7 +234,7 @@ const HomeScreen = ({ navigation }) => {
                     <MealItem
                         title="Snack"
                         calories={getMealData('Snack').totalCalories}
-                        recommended={getRecommendedCalories('Snack')}
+                        recommended={recommendedCalories.Snack}
                         items={getMealData('Snack').items}
                         isExpanded={expandedMeal === 'Snack'}
                         onToggle={() => setExpandedMeal(expandedMeal === 'Snack' ? null : 'Snack')}
@@ -343,9 +383,39 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: '#666',
     },
+    itemInfo: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    itemName: {
+        fontSize: 14,
+        color: '#666',
+        flex: 1,
+    },
+    itemQuantity: {
+        backgroundColor: '#F5F5F5',
+        paddingHorizontal: 8,
+        paddingVertical: 2,
+        borderRadius: 12,
+        marginRight: 8,
+    },
+    quantityText: {
+        fontSize: 12,
+        color: '#666',
+    },
+    mealItemRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 8,
+        paddingVertical: 4,
+    },
     itemCalories: {
         fontSize: 14,
         color: '#666',
+        minWidth: 70,
+        textAlign: 'right',
     },
 });
 

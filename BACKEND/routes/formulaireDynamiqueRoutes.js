@@ -181,6 +181,39 @@ router.put('/:id', formulaireDynamiqueController.updateFormulaire);
  */
 router.delete('/:id', formulaireDynamiqueController.deleteFormulaire);
 
+/**
+ * @swagger
+ * /api/formulaireDynamique/user/{userId}:
+ *   get:
+ *     summary: Obtenir le trimestre pour un utilisateur
+ *     tags: [FormulaireDynamique]
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: ID de l'utilisateur
+ *     responses:
+ *       200:
+ *         description: Trimestre de l'utilisateur
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 trimestre:
+ *                   type: string
+ *                   example: '1er trimestre'
+ *       404:
+ *         description: Formulaire non trouvé
+ *       500:
+ *         description: Erreur serveur
+ */
+router.get('/user/:userId', formulaireDynamiqueController.getTrimestreByUser);
+
+
+
 module.exports = router;
 
 

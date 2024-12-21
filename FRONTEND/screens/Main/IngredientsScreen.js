@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { COLORS } from '../../styles/colors';
-import { Svg, Circle, Line } from 'react-native-svg';
 import { Ionicons, Feather } from '@expo/vector-icons';
 import Header from './Header';
 import Button from '../../components/Button';
@@ -9,27 +8,23 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { getIngredients, getRecipes, createMeal, getMealsByUser, updateMealItems } from '../../services/apiService';
 import { useUser } from '../../services/Usercontext';
 
-
 const IngredientsScreen = ({ navigation, route }) => {
   const { category } = route.params;
   const [searchText, setSearchText] = useState('');
   const [selectedItems, setSelectedItems] = useState([]);
   const [foods, setFoods] = useState([]);
   const [totalCalories, setTotalCalories] = useState(0);
-  const { userId } = useUser(); // Get the current user's ID
-
-
+  const [quantities, setQuantities] = useState({});
+  const { userId } = useUser();
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch both ingredients and recipes
         const [ingredientsData, recipesData] = await Promise.all([
           getIngredients(),
           getRecipes()
         ]);
 
-        // Combine and format the data
         const combinedData = [
           ...ingredientsData.map(item => ({
             ...item,
@@ -50,33 +45,33 @@ const IngredientsScreen = ({ navigation, route }) => {
     fetchData();
   }, []);
 
+  const updateTotalCalories = () => {
+    const newTotal = selectedItems.reduce((sum, item) => {
+      const quantity = quantities[item._id] || 1;
+      return sum + (item.calories * quantity);
+    }, 0);
+    setTotalCalories(newTotal);
+  };
 
+  useEffect(() => {
+    updateTotalCalories();
+  }, [selectedItems, quantities]);
+
+  const handleQuantityChange = (itemId, newQuantity) => {
+    setQuantities(prev => ({
+      ...prev,
+      [itemId]: newQuantity
+    }));
+  };
 
   const handleAddMeal = async () => {
     try {
-      // Create a map to track item counts
-      const itemMap = new Map();
-
-      // Populate the map with existing items and their counts
-      selectedItems.forEach(item => {
-        if (itemMap.has(item._id)) {
-          itemMap.set(item._id, {
-            ...itemMap.get(item._id),
-            count: itemMap.get(item._id).count + 1
-          });
-        } else {
-
-          itemMap.set(item._id, {
-            itemId: item._id,
-            name: item.nom, // Assuming 'nom' is the name field
-            count: 1,
-            calories: item.calories
-          });
-        }
-      });
-
-      // Convert the map back to an array
-      const items = Array.from(itemMap.values());
+      const items = selectedItems.map(item => ({
+        itemId: item._id,
+        name: item.nom,
+        count: quantities[item._id] || 1,
+        calories: item.calories * (quantities[item._id] || 1)
+      }));
 
       const mealData = {
         userId,
@@ -85,25 +80,14 @@ const IngredientsScreen = ({ navigation, route }) => {
         totalCalories
       };
 
-      // Log the contents of selectedItems
-      console.log('Selected items:', selectedItems);
-
-      // Log the data being sent to the backend
-      console.log('Data being sent to backend:', mealData);
-
-      // Check if a meal for this category already exists for the user
       const existingMeals = await getMealsByUser(userId);
       const existingMeal = existingMeals.find(meal => meal.mealType === category);
 
       if (existingMeal) {
-        // Update the existing meal
         await updateMealItems(existingMeal._id, items);
       } else {
-        // Create a new meal
         await createMeal(mealData);
       }
-
-      console.log('Meal added/updated successfully');
 
       navigation.navigate('Main');
     } catch (error) {
@@ -113,33 +97,63 @@ const IngredientsScreen = ({ navigation, route }) => {
 
   const toggleItem = (item) => {
     if (selectedItems.find(selected => selected._id === item._id)) {
-      // Remove item
       setSelectedItems(selectedItems.filter(selected => selected._id !== item._id));
-      setTotalCalories(prev => prev - item.calories);
+      setQuantities(prev => {
+        const newQuantities = { ...prev };
+        delete newQuantities[item._id];
+        return newQuantities;
+      });
     } else {
-      // Add item
       setSelectedItems([...selectedItems, item]);
-      setTotalCalories(prev => prev + item.calories);
+      setQuantities(prev => ({
+        ...prev,
+        [item._id]: 1
+      }));
     }
+  };
+
+  const renderQuantitySelector = (item) => {
+    const quantity = quantities[item._id] || 1;
+    const unit = item.type === 'ingredient' ? (item.unité || 'g') : 'serving';
+
+    return (
+      <View style={styles.quantityContainer}>
+        <TouchableOpacity
+          style={styles.quantityButton}
+          onPress={() => handleQuantityChange(item._id, Math.max(1, quantity - 1))}
+        >
+          <Feather name="minus" size={16} color={COLORS.primary.dark} />
+        </TouchableOpacity>
+
+        <View style={styles.quantityValueContainer}>
+          <Text style={styles.quantityValue}>{quantity}</Text>
+          <Text style={styles.quantityUnit}>{unit}</Text>
+        </View>
+
+        <TouchableOpacity
+          style={styles.quantityButton}
+          onPress={() => handleQuantityChange(item._id, quantity + 1)}
+        >
+          <Feather name="plus" size={16} color={COLORS.primary.dark} />
+        </TouchableOpacity>
+      </View>
+    );
   };
 
   const renderFoodItem = (item) => {
     const isSelected = selectedItems.find(selected => selected._id === item._id);
+    const quantity = quantities[item._id] || 1;
+    const itemCalories = item.calories * quantity;
 
     return (
       <View style={styles.foodCard} key={item._id}>
         <View style={styles.foodInfo}>
           <Text style={styles.foodName}>{item.nom}</Text>
-          <Text style={styles.foodType}>
-            {item.type === 'recipe' ? 'Recipe' : `1 ${item.unité}`}
-          </Text>
-          <Text style={styles.foodCalories}>{item.calories} kcal</Text>
+          {isSelected && renderQuantitySelector(item)}
+          <Text style={styles.foodCalories}>{itemCalories} kcal</Text>
         </View>
         <TouchableOpacity
-          style={[
-            styles.addButton,
-            isSelected && styles.selectedButton
-          ]}
+          style={[styles.addButton, isSelected && styles.selectedButton]}
           onPress={() => toggleItem(item)}
         >
           <Feather
@@ -212,6 +226,43 @@ const IngredientsScreen = ({ navigation, route }) => {
 };
 
 const styles = StyleSheet.create({
+  quantityContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 10,
+    backgroundColor: COLORS.primary.light,
+    borderRadius: 15,
+    padding: 5,
+  },
+  quantityButton: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#fff',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  quantityValueContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 8,
+  },
+  quantityValue: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: COLORS.primary.dark,
+    marginRight: 4,
+  },
+  quantityUnit: {
+    fontSize: 12,
+    color: COLORS.primary.dark,
+  },
+  foodInfo: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
   container: {
     flex: 1,
     // Ajouté pour réduire la largeur des éléments généraux
@@ -285,10 +336,6 @@ const styles = StyleSheet.create({
     borderColor: COLORS.secondary.light,
     width: '95%',  // Réduit la largeur des cartes alimentaires
     alignSelf: 'center',  // Centre les cartes
-  },
-  foodInfo: {
-    flexDirection: 'row', // Set layout to horizontal
-    alignItems: 'center', // Align items vertically
   },
   foodName: {
     fontSize: 16,

@@ -7,7 +7,7 @@ const mealSchema = new mongoose.Schema({
         {
             itemId: { type: mongoose.Schema.Types.ObjectId, required: true },
             name: { type: String, required: true },
-            count: { type: Number, required: true },
+            count: { type: Number, required: true, default: 1 },
             calories: { type: Number, required: true },
         },
     ],
