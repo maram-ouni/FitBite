@@ -38,7 +38,7 @@
 //                     { width: logoSize, height: logoSize, transform: [{ translateY: logoPosition }] }
 //                 ]} 
 //             />
-            
+
 //             {/* Title */}
 //             <Text 
 //                 style={[

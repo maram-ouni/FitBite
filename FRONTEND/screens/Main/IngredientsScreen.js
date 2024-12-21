@@ -1,68 +1,160 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
-import { COLORS } from '../../styles/colors'; // Assurez-vous que vos couleurs sont bien définies ici
+import React, { useState, useEffect } from 'react';
+import { View, Text, TextInput, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { COLORS } from '../../styles/colors';
+import { Svg, Circle, Line } from 'react-native-svg';
 import { Ionicons, Feather } from '@expo/vector-icons';
 import Header from './Header';
 import Button from '../../components/Button';
 import { LinearGradient } from 'expo-linear-gradient';
+import { getIngredients, getRecipes, createMeal, getMealsByUser, updateMealItems } from '../../services/apiService';
+import { useUser } from '../../services/Usercontext';
 
-const IngredientsScreen = ({ navigation }) => {
+
+const IngredientsScreen = ({ navigation, route }) => {
+  const { category } = route.params;
   const [searchText, setSearchText] = useState('');
   const [selectedItems, setSelectedItems] = useState([]);
+  const [foods, setFoods] = useState([]);
+  const [totalCalories, setTotalCalories] = useState(0);
+  const { userId } = useUser(); // Get the current user's ID
 
-  const foods = [
-    { id: '1', name: 'Coffee with milk', calories: 219 },
-    { id: '2', name: 'Sandwich', calories: 300 },
-    { id: '3', name: 'Tomato', calories: 50 },
-    { id: '4', name: 'Cucumber', calories: 50 },
-    { id: '5', name: 'Tea without sugar', calories: 0 },
-    { id: '6', name: 'Boiled egg', calories: 96 },
-    { id: '7', name: 'Avocado', calories: 250 },
-    { id: '8', name: 'Cheese', calories: 300 },
-  ];
 
-  const toggleItem = (id) => {
-    if (selectedItems.includes(id)) {
-      setSelectedItems(selectedItems.filter((item) => item !== id));
-    } else {
-      setSelectedItems([...selectedItems, id]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Fetch both ingredients and recipes
+        const [ingredientsData, recipesData] = await Promise.all([
+          getIngredients(),
+          getRecipes()
+        ]);
+
+        // Combine and format the data
+        const combinedData = [
+          ...ingredientsData.map(item => ({
+            ...item,
+            type: 'ingredient'
+          })),
+          ...recipesData.map(item => ({
+            ...item,
+            type: 'recipe'
+          }))
+        ];
+
+        setFoods(combinedData);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+
+
+  const handleAddMeal = async () => {
+    try {
+      // Create a map to track item counts
+      const itemMap = new Map();
+
+      // Populate the map with existing items and their counts
+      selectedItems.forEach(item => {
+        if (itemMap.has(item._id)) {
+          itemMap.set(item._id, {
+            ...itemMap.get(item._id),
+            count: itemMap.get(item._id).count + 1
+          });
+        } else {
+
+          itemMap.set(item._id, {
+            itemId: item._id,
+            name: item.nom, // Assuming 'nom' is the name field
+            count: 1,
+            calories: item.calories
+          });
+        }
+      });
+
+      // Convert the map back to an array
+      const items = Array.from(itemMap.values());
+
+      const mealData = {
+        userId,
+        mealType: category,
+        items,
+        totalCalories
+      };
+
+      // Log the contents of selectedItems
+      console.log('Selected items:', selectedItems);
+
+      // Log the data being sent to the backend
+      console.log('Data being sent to backend:', mealData);
+
+      // Check if a meal for this category already exists for the user
+      const existingMeals = await getMealsByUser(userId);
+      const existingMeal = existingMeals.find(meal => meal.mealType === category);
+
+      if (existingMeal) {
+        // Update the existing meal
+        await updateMealItems(existingMeal._id, items);
+      } else {
+        // Create a new meal
+        await createMeal(mealData);
+      }
+
+      console.log('Meal added/updated successfully');
+
+      navigation.navigate('Main');
+    } catch (error) {
+      console.error('Error adding/updating meal:', error);
     }
   };
 
-  const renderFoodItem = (item) => (
-    <View style={styles.foodCard} key={item.id}>
-      <Text style={styles.foodName}>{item.name}</Text>
-      <Text style={styles.foodCalories}>{item.calories} kcal</Text>
-      <TouchableOpacity
-        style={[
-          styles.addButton,
-          selectedItems.includes(item.id) && { backgroundColor: COLORS.primary.dark },
-        ]}
-        onPress={() => toggleItem(item.id)}
-      >
-        <Feather
-          name={selectedItems.includes(item.id) ? 'check' : 'plus'}
-          size={20}
-          color={COLORS.primary.light}
-        />
-      </TouchableOpacity>
-    </View>
+  const toggleItem = (item) => {
+    if (selectedItems.find(selected => selected._id === item._id)) {
+      // Remove item
+      setSelectedItems(selectedItems.filter(selected => selected._id !== item._id));
+      setTotalCalories(prev => prev - item.calories);
+    } else {
+      // Add item
+      setSelectedItems([...selectedItems, item]);
+      setTotalCalories(prev => prev + item.calories);
+    }
+  };
+
+  const renderFoodItem = (item) => {
+    const isSelected = selectedItems.find(selected => selected._id === item._id);
+
+    return (
+      <View style={styles.foodCard} key={item._id}>
+        <View style={styles.foodInfo}>
+          <Text style={styles.foodName}>{item.nom}</Text>
+          <Text style={styles.foodType}>
+            {item.type === 'recipe' ? 'Recipe' : `1 ${item.unité}`}
+          </Text>
+          <Text style={styles.foodCalories}>{item.calories} kcal</Text>
+        </View>
+        <TouchableOpacity
+          style={[
+            styles.addButton,
+            isSelected && styles.selectedButton
+          ]}
+          onPress={() => toggleItem(item)}
+        >
+          <Feather
+            name={isSelected ? 'check' : 'plus'}
+            size={20}
+            color={COLORS.primary.dark}
+          />
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
+  const filteredFoods = foods.filter(item =>
+    item.nom.toLowerCase().includes(searchText.toLowerCase())
   );
-
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-
-  const handleSubmit = () => {
-    console.log({ title, description });
-    alert('Items added successfully!');
-    setTitle('');
-    setDescription('');
-  };
-
-  // Fonction pour revenir à l'écran précédent
-  const handleGoBack = () => {
-    navigation.goBack();
-  };
 
   return (
     <LinearGradient
@@ -70,49 +162,50 @@ const IngredientsScreen = ({ navigation }) => {
       locations={COLORS.gradients.background.locations}
       style={styles.container}
     >
-      {/* Header */}
       <View style={styles.headerContainer}>
         <Header
-          date="2 May, Monday"
           onMorePress={() => console.log('More button pressed')}
           navigation={navigation}
         />
       </View>
 
-      {/* Back Button */}
       <View style={styles.bbb}>
-        <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
           <Feather name="arrow-left" size={24} color={COLORS.primary.dark} />
         </TouchableOpacity>
       </View>
 
-      
+      <Text style={styles.title}>{category}</Text>
+      <Text style={styles.totalCalories}>Total Calories: {totalCalories}</Text>
 
-      {/* Title */}
-      <Text style={styles.title}>Breakfast</Text>
-      <Text style={styles.totalCalories}>0 Kcal</Text>
-
-      {/* Search Bar */}
       <View style={styles.searchBar}>
         <Ionicons name="search-outline" size={20} color="#aaa" />
         <TextInput
           style={styles.searchInput}
-          placeholder="Looking for something?"
+          placeholder="Search ingredients or recipes..."
           value={searchText}
           onChangeText={setSearchText}
         />
       </View>
 
-      <View style={styles.hhh}></View>
-
-      {/* Food List - using ScrollView instead of FlatList */}
       <ScrollView style={styles.foodList}>
-        {foods.map((item) => renderFoodItem(item))}
+        {filteredFoods.length === 0 ? (
+          <Text style={styles.noItemsText}>No items found</Text>
+        ) : (
+          filteredFoods.map(renderFoodItem)
+        )}
       </ScrollView>
 
-      {/* Add to Breakfast Button */}
       <View style={styles.buttonContainer}>
-        <Button title="Add items" onPress={handleSubmit} style={styles.submitButton} />
+        <Button
+          title={`Add ${selectedItems.length} items to ${category}`}
+          onPress={handleAddMeal}
+          style={styles.submitButton}
+          disabled={selectedItems.length === 0}
+        />
       </View>
     </LinearGradient>
   );
@@ -136,7 +229,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   bbb: {
-  
+
     paddingTop: 5,
     paddingLeft: 10,
   },
@@ -145,7 +238,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: COLORS.primary.dark,
     marginBottom: 10,
-    paddingTop:-20,
+    paddingTop: -20,
     textAlign: 'center',
     width: '80%',  // Réduit la largeur du titre
     alignSelf: 'center',  // Centre le titre
@@ -168,13 +261,13 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     width: '95%',  // Réduit la largeur de la barre de recherche
     alignSelf: 'center',  // Centre la barre de recherche
-    
+
   },
   searchInput: {
     marginLeft: 10,
     flex: 1,
     color: '#555',
-    fontSize:15,
+    fontSize: 15,
   },
   foodList: {
     flex: 1,
@@ -193,15 +286,24 @@ const styles = StyleSheet.create({
     width: '95%',  // Réduit la largeur des cartes alimentaires
     alignSelf: 'center',  // Centre les cartes
   },
+  foodInfo: {
+    flexDirection: 'row', // Set layout to horizontal
+    alignItems: 'center', // Align items vertically
+  },
   foodName: {
     fontSize: 16,
     color: '#1a1c24',
     fontWeight: 'bold',
+    marginRight: 5, // Add spacing between name and calories
+  },
+  foodType: {
+    marginRight: 20, // Add spacing between name and calories
   },
   foodCalories: {
     fontSize: 14,
     color: '#9da8c3',
   },
+
   addButton: {
     width: 30,
     height: 30,
