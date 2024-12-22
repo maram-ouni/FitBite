@@ -85,3 +85,25 @@ exports.deleteFormulaire = async (req, res) => {
     res.status(500).send(error);
   }
 };
+
+exports.getTrimestrenewById = async (req, res) => {
+  try {
+    // Récupérer l'ID utilisateur passé dans les paramètres de la requête
+    const { userId } = req.params;
+
+    // Rechercher le formulaire dynamique qui est associé à cet utilisateur
+    const formulaire = await FormulaireDynamique.findOne({ utilisateur: userId }).select('trimestre');
+
+    // Vérifier si le formulaire existe
+    if (!formulaire) {
+      return res.status(404).json({ message: 'Formulaire non trouvé pour cet utilisateur' });
+    }
+
+    // Retourner le trimestre de l'utilisateur
+    res.json({ trimestre: formulaire.trimestre });
+  } catch (error) {
+    console.error("Error fetching trimestre by ID:", error);
+    res.status(500).json({ message: 'Erreur serveur' });
+  }
+};
+

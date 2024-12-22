@@ -499,6 +499,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Header from './Header';
 import { getFormulaires, updateFormulaire, createFormulaire } from '../../services/apiService'; // Import des fonctions API
 import { useUser } from '../../services/Usercontext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const UpdateScreen = ({ navigation, route }) => {
     const { userId } = useUser();
@@ -512,6 +513,7 @@ const UpdateScreen = ({ navigation, route }) => {
     const [supplements, setSupplements] = useState('');
     const [doctorRemarks, setDoctorRemarks] = useState('');
     const [specialDiet, setSpecialDiet] = useState(''); // Nouveau champ pour le régime spécial
+    const { setUserId } = useUser(); 
 
     useEffect(() => {
         // Charger les données initiales si formulaireId ou userId est fourni
@@ -541,7 +543,8 @@ const UpdateScreen = ({ navigation, route }) => {
     }, [formulaireId]);
 
     const handleSubmit = async () => {
-        const newFormData = {
+    
+    const newFormData = {
             trimestre: trimester,
             poidsActuel: weight,
             taille: height,
@@ -551,6 +554,7 @@ const UpdateScreen = ({ navigation, route }) => {
             regimeSpecial: specialDiet, // Ajouter le régime spécial dans les données envoyées
             doctorRemarks:  doctorRemarks,
         };
+        console.log
 
         try {
             if (formulaireId) {
@@ -561,7 +565,7 @@ const UpdateScreen = ({ navigation, route }) => {
                 await createFormulaire(newFormData);
             }
             alert('Information saved successfully!');
-            navigation.navigate('Main');
+            navigation.navigate('Auth');
         } catch (error) {
             console.error('Error submitting form:', error);
             alert('Failed to save data. Please try again.');

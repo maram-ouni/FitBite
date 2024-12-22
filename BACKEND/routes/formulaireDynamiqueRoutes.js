@@ -213,6 +213,7 @@ router.delete('/:id', formulaireDynamiqueController.deleteFormulaire);
 router.get('/user/:userId', formulaireDynamiqueController.getTrimestreByUser);
 
 
+router.get('/:userId/trimestre', formulaireDynamiqueController.getTrimestrenewById);
 
 module.exports = router;
 

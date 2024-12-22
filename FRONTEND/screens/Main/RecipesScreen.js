@@ -11,10 +11,11 @@ import {
   TextInput,
 } from "react-native";
 import { COLORS } from "../../styles/colors";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LinearGradient } from "expo-linear-gradient";
 import Button from "../../components/Button"; // Import du composant Button
 import Header from "./Header";
-import { getRecipes } from "../../services/apiService"; // Importation du service getRecipes
+import { getRecipes, getFormulaireTrimestreById } from "../../services/apiService"; // Importation du service getRecipes
 import { Ionicons } from "@expo/vector-icons"; // Import Ionicons for the search icon
 
 const RecipesScreen = ({ navigation }) => {
@@ -23,35 +24,51 @@ const RecipesScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true); // État pour gérer le chargement
   const [error, setError] = useState(null); // État pour gérer les erreurs
   const [searchText, setSearchText] = useState(""); // State for search input
+  const [userTrimester, setUserTrimester] = useState(null); // État pour stocker la trimestre de l'utilisateur
+  const [userId, setUserId] = useState(null);
 
   // Liste des filtres horizontaux
   const filters = ["Breakfast", "Lunch", "Dinner", "Snacks"];
 
   // Récupérer les recettes depuis l'API
   useEffect(() => {
-    const fetchRecipes = async () => {
+    const fetchData = async () => {
       try {
+        // Récupérer le userId stocké depuis AsyncStorage
+        const userId = await AsyncStorage.getItem("utilisateurId");
+        if (userId) {
+          setUserId(userId); // Mettre à jour l'état avec userId
+        }
+        console.log(userId)
+        // Vérifie si AuserId est disponible avant de continuer
+        if (userId) {
+          const userForm = await getFormulaireTrimestreById(userId);
+          setUserTrimester(userForm.trimestre); // Stocke le trimestre de l'utilisateur
+          console.log(`User Trimester: ${userTrimester}`);
+        }
+        
         const data = await getRecipes(); // Appeler la fonction getRecipes depuis le service
         setRecipes(data); // Stocker les recettes dans l'état
         setLoading(false); // Terminer le chargement
         console.log("Recipes:", recipes);
-        console.log("Categories in recipes:", recipes.map(r => r.categorie));
       } catch (error) {
         setError("Failed to fetch recipes"); // Gérer l'erreur
         setLoading(false); // Terminer le chargement
+        console.error(error);
       }
     };
 
-    fetchRecipes();
-  }, []); // L'effet ne s'exécute qu'une fois, lors du montage du composant
+    fetchData(); // Exécuter la fonction fetchData au montage du composant
+  }, []);  // L'effet ne s'exécute qu'une fois, lors du montage du composant
 
   // Récupérer les recettes pour le filtre actif
 
-  const selectedRecipes = recipes
-    .filter((recipe) => recipe.categorie === activeFilter)
-    .filter((recipe) =>
-      recipe.nom.toLowerCase().includes(searchText.toLowerCase())
-    ); // Filter recipes by search text
+  const selectedRecipes = recipes.filter(
+    (recipe) =>
+      recipe.categorie?.toLowerCase() === activeFilter.toLowerCase() &&
+      recipe.nom.toLowerCase().includes(searchText.toLowerCase()) &&
+      recipe.trimester.includes(userTrimester)
+  ); // Filter recipes by search text
 
 
   if (loading) {
