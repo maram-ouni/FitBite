@@ -2,7 +2,7 @@
 
 import axios from 'axios';
 
-const API_URL = 'http://192.168.1.146:5000/api'; // Replace with your actual backend URL
+const API_URL = 'http://192.168.1.66:5000/api'; // Replace with your actual backend URL
 
 export const signUpUser = async (userData) => {
   const user = {
@@ -141,30 +141,30 @@ export const updateFormulaire = async (id, formData) => {
 // Mettre à jour une recette avec des ingrédients
 export const updateRecipeWithIngredients = async (recipeId, { ingredients }) => {
   try {
-      // Calculer la somme des calories de tous les ingrédients
-      const totalCalories = ingredients.reduce((sum, ingredient) => {
-          return sum + (ingredient.calorie || 0); // Si `calorie` est null ou undefined, utiliser 0
-      }, 0);
-      console.log(totalCalories)
-      // Inclure la somme des calories dans la requête
-      const response = await axios.put(
-          `${API_URL}/recettes/${recipeId}`,
-          { 
-              ingredients, 
-              calories: totalCalories // Ajout du champ calories
-          },
-          {
-              headers: {
-                  'Content-Type': 'application/json',
-              },
-          }
-      );
-      console.log(response);
-      console.log(response.data);
+    // Calculer la somme des calories de tous les ingrédients
+    const totalCalories = ingredients.reduce((sum, ingredient) => {
+      return sum + (ingredient.calorie || 0); // Si `calorie` est null ou undefined, utiliser 0
+    }, 0);
+    console.log(totalCalories)
+    // Inclure la somme des calories dans la requête
+    const response = await axios.put(
+      `${API_URL}/recettes/${recipeId}`,
+      {
+        ingredients,
+        calories: totalCalories // Ajout du champ calories
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+    console.log(response);
+    console.log(response.data);
 
-      return response.data; // Retourne la recette mise à jour
+    return response.data; // Retourne la recette mise à jour
   } catch (error) {
-      console.error('Error updating recipe:', error);
+    console.error('Error updating recipe:', error);
   }
 };
 

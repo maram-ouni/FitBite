@@ -7,6 +7,8 @@ import Button from '../../components/Button';
 import { LinearGradient } from 'expo-linear-gradient';
 import { getIngredients, getRecipes, createMeal, getMealsByUser, updateMealItems } from '../../services/apiService';
 import { useUser } from '../../services/Usercontext';
+import { getTrimestreByUser } from '../../services/apiService';
+
 
 const IngredientsScreen = ({ navigation, route }) => {
   const { category } = route.params;
@@ -16,21 +18,31 @@ const IngredientsScreen = ({ navigation, route }) => {
   const [totalCalories, setTotalCalories] = useState(0);
   const [quantities, setQuantities] = useState({});
   const { userId } = useUser();
+  const [userTrimester, setUserTrimester] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
+        const trimestre = await getTrimestreByUser(userId);
+        setUserTrimester(trimestre);
         const [ingredientsData, recipesData] = await Promise.all([
           getIngredients(),
           getRecipes()
         ]);
+
+        const filteredRecipes = recipesData.filter(
+          (recipe) =>
+            recipe.categorie?.toLowerCase() === category.toLowerCase() &&
+            recipe.nom.toLowerCase().includes(searchText.toLowerCase()) &&
+            recipe.trimester.includes(trimestre)
+        );
 
         const combinedData = [
           ...ingredientsData.map(item => ({
             ...item,
             type: 'ingredient'
           })),
-          ...recipesData.map(item => ({
+          ...filteredRecipes.map(item => ({
             ...item,
             type: 'recipe'
           }))
@@ -43,7 +55,7 @@ const IngredientsScreen = ({ navigation, route }) => {
     };
 
     fetchData();
-  }, []);
+  }, [category, userId]);
 
   const updateTotalCalories = () => {
     const newTotal = selectedItems.reduce((sum, item) => {
