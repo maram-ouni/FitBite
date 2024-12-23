@@ -13,7 +13,7 @@ const listeCoursesRoutes = require('./routes/listeCoursesRoutes');
 const supermarchesRoutes = require('./routes/supermarchesRoutes');
 const utilisateursRoutes = require('./routes/utilisateursRoutes');
 const mealRoutes = require("./routes/MealRoutes");
-
+const scheduler = require('./scheduler');
 
 dotenv.config();
 const app = express();
