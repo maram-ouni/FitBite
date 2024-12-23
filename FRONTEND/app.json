@@ -3,6 +3,11 @@
     "name": "fitbite",
     "slug": "fitbite",
     "version": "1.0.0",
-    "newArchEnabled": true
+    "newArchEnabled": true,
+    "extra": {
+      "eas": {
+        "projectId": "306300d6-b82e-435f-aab2-ed4b8d0169f6"
+      }
+    }
   }
 }
