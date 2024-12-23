@@ -244,7 +244,7 @@ const SignUpScreen = ({ navigation }) => {
     const [isPasswordContainsNumber, setIsPasswordContainsNumber] = useState(false);
     const [activeField, setActiveField] = useState(null);
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
-
+    
     const isValidEmail = (email) => {
         const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
         return emailRegex.test(email);
@@ -277,6 +277,7 @@ const SignUpScreen = ({ navigation }) => {
             
            
                 Alert.alert('Success', 'Account created successfully!');
+                
                 navigation.navigate('FormulaireDynamique');
             
         } catch (error) {

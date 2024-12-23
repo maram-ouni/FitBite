@@ -5,6 +5,8 @@ import Button from '../../components/Button';
 import { COLORS } from '../../styles/colors';
 import { LinearGradient } from 'expo-linear-gradient';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 
 const SignupFormScreen = ({ navigation }) => {
   const [firstName, setFirstName] = useState('');
@@ -13,15 +15,19 @@ const SignupFormScreen = ({ navigation }) => {
   const [dateOfBirth, setDateOfBirth] = useState(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [city, setCity] = useState('ghazala');
+  const { setUserId } = useUser(); 
 
-  const handleSignUp = () => {
-    console.log({
-      firstName,
-      lastName,
-      phoneNumber,
-      dateOfBirth: dateOfBirth.toLocaleDateString(),
-      city,
-    });
+  const handleSignUp = async () => {
+    try {
+      const response = await apiCallToSignUpUser({ firstName, lastName, phoneNumber, dateOfBirth, city });
+      const userId = response.data.utilisateur.id;
+      setUserId(userId);
+      console.log()
+      await AsyncStorage.setItem('utilisateurId', userId);
+      navigation.navigate('Main');
+    } catch (error) {
+      console.error('Sign up failed:', error);
+    }
   };
 
   const onDateChange = (event, selectedDate) => {
@@ -133,11 +139,8 @@ const SignupFormScreen = ({ navigation }) => {
         </View>
 
         {/* Submit Button */}
-        <Button
-          title="Sign Up"
-          onPress={() => navigation.navigate('Main')}
-          style={styles.button}
-        />
+        <Button title="Sign Up" onPress={handleSignUp} style={styles.button} />
+
       </ScrollView>
       
     </LinearGradient>
