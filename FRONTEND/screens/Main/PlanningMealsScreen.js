@@ -15,16 +15,12 @@ const PlanningMealsScreen = ({ navigation }) => {
     { type: 'SNACKS', icon: require('../../assets/images/snacks.png') },
   ];
 
-  const handlePress = () => {
-    navigation.navigate('RecipiesScreen');  // Modifier avec le nom de l'écran de destination
+  const handlePress = (mealType) => {
+    navigation.navigate('MealDetailsScreen', { category: mealType });
   };
-
-  // Fonction pour revenir à l'écran précédent
   const handleGoBack = () => {
     navigation.goBack();
   };
-
-
   return (
     <LinearGradient
       colors={COLORS.gradients.background.colors}
@@ -39,7 +35,6 @@ const PlanningMealsScreen = ({ navigation }) => {
           navigation={navigation}
         />
       </View>
-
       <View style={styles.bbb}>
    <TouchableOpacity style={styles.backButton} onPress={handleGoBack}>
         <Feather name="arrow-left" size={24} color={COLORS.primary.dark} />
@@ -58,17 +53,18 @@ const PlanningMealsScreen = ({ navigation }) => {
           <View key={index} style={styles.mealCard}>
             <Image source={meal.icon} style={styles.mealIcon} />
             <Text style={styles.mealText}>{meal.type}</Text>
-            <TouchableOpacity style={styles.addButton} onPress={handlePress}>
+            <TouchableOpacity
+              style={styles.addButton}
+              onPress={() => handlePress(meal.type)}
+            >
               <Feather name="plus" size={24} color="#006A6A" />
             </TouchableOpacity>
           </View>
         ))}
-        
       </ScrollView>
     </LinearGradient>
   );
 };
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,

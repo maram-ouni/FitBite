@@ -17,7 +17,24 @@ const utilisateurSchema = new mongoose.Schema({
             supermarcheNom :{ type: String, required: false },
             supermarcheImage :{ type: String },
         }
-    ]
+    ],
+    mealPlanning: [
+        {
+          mealType: { type: String, required: false }, // e.g., 'BREAKFAST', 'LUNCH'
+          items: [
+            {
+              itemId: {
+                type: mongoose.Schema.Types.ObjectId,
+                refPath: 'items.itemType', // Dynamically choose ref model
+                required: false
+              },
+              itemType: { type: String, required: false, enum: ['Ingredient', 'Recette'] }, // Can be either Ingredient or Recette
+              name: { type: String, required: false },
+              count: { type: Number, required: false },
+            }
+          ],
+        }
+      ]
 }, { timestamps: true });
 
 module.exports = mongoose.model('Utilisateur', utilisateurSchema);

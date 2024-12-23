@@ -553,3 +553,42 @@ export const getFormulaireTrimestreById = async (userId) => {
     throw error;
   }
 };
+
+export const createMeal1 = async (userId, mealType, items) => {
+  try {
+    const response = await axios.post(`${API_URL}/auth/meals`, {
+      userId,
+      mealType,
+      items,
+    });
+    return response.data; // Return the updated user data
+  } catch (error) {
+    console.error('Error creating meal:', error);
+    throw error; // Propagate the error
+  }
+};
+
+// Function to get meals for a specific user
+export const getMealsByUser1 = async (userId) => {
+  try {
+    const response = await axios.get(`${API_URL}/auth/meals/user/${userId}`);
+    return response.data; 
+  } catch (error) {
+    console.error('Error fetching meals:', error);
+    throw error; // Propagate the error
+  }
+};
+
+// Function to update a user's meal items
+export const updateMealItems1 = async (userId, mealType, items) => {
+  try {
+    const response = await axios.put(`${API_URL}/auth/meals/${userId}`, {
+      mealType,
+      items,
+    });
+    return response.data; // Return the updated user data
+  } catch (error) {
+    console.error('Error updating meal items:', error);
+    throw error; // Propagate the error
+  }
+};
