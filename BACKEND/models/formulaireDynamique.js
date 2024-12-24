@@ -3,15 +3,15 @@ const mongoose = require('mongoose');
 const formulaireDynamiqueSchema = new mongoose.Schema({
   trimestre: {
     type: Number,
-    required: true,
+    required: false,
   },
   poidsActuel: {
     type: Number,
-    required: true,
+    required: false,
   },
   taille: {
     type: Number,
-    required: true,
+    required: false,
   },
   recommandations: {
     type: String,
@@ -19,7 +19,7 @@ const formulaireDynamiqueSchema = new mongoose.Schema({
   },
   ActivitePhysique: {
     type: String,
-    required: true,
+    required: false,
   },
   regimeSpecial: {
     type: String,

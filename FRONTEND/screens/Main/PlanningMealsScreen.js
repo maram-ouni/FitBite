@@ -16,7 +16,7 @@ const PlanningMealsScreen = ({ navigation }) => {
   ];
 
   const handlePress = () => {
-    navigation.navigate('RecipiesScreen');  // Modifier avec le nom de l'écran de destination
+    navigation.navigate('RecipesScreen');  // Modifier avec le nom de l'écran de destination
   };
 
   // Fonction pour revenir à l'écran précédent
