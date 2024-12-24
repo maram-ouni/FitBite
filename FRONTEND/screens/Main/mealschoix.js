@@ -5,44 +5,31 @@ import { Ionicons, Feather } from '@expo/vector-icons';
 import Header from './Header';
 import Button from '../../components/Button';
 import { LinearGradient } from 'expo-linear-gradient';
-import { getIngredients, getRecipes, createMeal, getMealsByUser, updateMealItems } from '../../services/apiService';
+import { getIngredients, getRecipes, createMeal1, getMealsByUser1, updateMealItems1 } from '../../services/apiService';
 import { useUser } from '../../services/Usercontext';
-import { getTrimestreByUser } from '../../services/apiService';
 
-
-const IngredientsScreen = ({ navigation, route }) => {
+const Mealschoix = ({ navigation, route }) => {
   const { category } = route.params;
   const [searchText, setSearchText] = useState('');
   const [selectedItems, setSelectedItems] = useState([]);
   const [foods, setFoods] = useState([]);
-  const [totalCalories, setTotalCalories] = useState(0);
   const [quantities, setQuantities] = useState({});
   const { userId } = useUser();
-  const [userTrimester, setUserTrimester] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const trimestre = await getTrimestreByUser(userId);
-        setUserTrimester(trimestre);
         const [ingredientsData, recipesData] = await Promise.all([
           getIngredients(),
           getRecipes()
         ]);
-
-        const filteredRecipes = recipesData.filter(
-          (recipe) =>
-            recipe.categorie?.toLowerCase() === category.toLowerCase() &&
-            recipe.nom.toLowerCase().includes(searchText.toLowerCase()) &&
-            recipe.trimester.includes(trimestre)
-        );
 
         const combinedData = [
           ...ingredientsData.map(item => ({
             ...item,
             type: 'ingredient'
           })),
-          ...filteredRecipes.map(item => ({
+          ...recipesData.map(item => ({
             ...item,
             type: 'recipe'
           }))
@@ -55,19 +42,7 @@ const IngredientsScreen = ({ navigation, route }) => {
     };
 
     fetchData();
-  }, [category, userId]);
-
-  const updateTotalCalories = () => {
-    const newTotal = selectedItems.reduce((sum, item) => {
-      const quantity = quantities[item._id] || 1;
-      return sum + (item.calories * quantity);
-    }, 0);
-    setTotalCalories(newTotal);
-  };
-
-  useEffect(() => {
-    updateTotalCalories();
-  }, [selectedItems, quantities]);
+  }, []);
 
   const handleQuantityChange = (itemId, newQuantity) => {
     setQuantities(prev => ({
@@ -82,23 +57,21 @@ const IngredientsScreen = ({ navigation, route }) => {
         itemId: item._id,
         name: item.nom,
         count: quantities[item._id] || 1,
-        calories: item.calories * (quantities[item._id] || 1)
       }));
 
       const mealData = {
         userId,
         mealType: category,
         items,
-        totalCalories
       };
-
-      const existingMeals = await getMealsByUser(userId);
+console.log(userId)
+      const existingMeals = await getMealsByUser1(userId);
       const existingMeal = existingMeals.find(meal => meal.mealType === category);
 
       if (existingMeal) {
-        await updateMealItems(existingMeal._id, items);
+        await updateMealItems1(existingMeal._id, items);
       } else {
-        await createMeal(mealData);
+        await createMeal1(mealData);
       }
 
       navigation.navigate('Main');
@@ -154,15 +127,12 @@ const IngredientsScreen = ({ navigation, route }) => {
 
   const renderFoodItem = (item) => {
     const isSelected = selectedItems.find(selected => selected._id === item._id);
-    const quantity = quantities[item._id] || 1;
-    const itemCalories = item.calories * quantity;
 
     return (
       <View style={styles.foodCard} key={item._id}>
         <View style={styles.foodInfo}>
           <Text style={styles.foodName}>{item.nom}</Text>
           {isSelected && renderQuantitySelector(item)}
-          <Text style={styles.foodCalories}>{itemCalories} kcal</Text>
         </View>
         <TouchableOpacity
           style={[styles.addButton, isSelected && styles.selectedButton]}
@@ -205,7 +175,6 @@ const IngredientsScreen = ({ navigation, route }) => {
       </View>
 
       <Text style={styles.title}>{category}</Text>
-      <Text style={styles.totalCalories}>Total Calories: {totalCalories}</Text>
 
       <View style={styles.searchBar}>
         <Ionicons name="search-outline" size={20} color="#aaa" />
@@ -382,4 +351,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default IngredientsScreen;
+export default Mealschoix;

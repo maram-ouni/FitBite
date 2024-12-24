@@ -9,7 +9,7 @@ import GroceriesListScreen from "../screens/Main/GroceriesListScreen";
 // import ProfileScreen from '../screens/Main/ProfileScreen';
 import RecipesScreen from "../screens/Main/RecipesScreen";
 import IngredientsScreen from "../screens/Main/IngredientsScreen";
-
+import Mealschoix from "../screens/Main/mealschoix";
 import Addfood1 from "../screens/addfood/addfood1";
 import Addfood2 from "../screens/addfood/addfood2";
 import Addfood3 from "../screens/addfood/addfood3";
@@ -127,6 +127,12 @@ const Navigation = () => {
       <Stack.Screen
         name="Ingredients"
         component={IngredientsScreen}
+        options={{ headerShown: false }}
+      />
+
+      <Stack.Screen
+        name="MealDetailsScreen"
+        component={Mealschoix}
         options={{ headerShown: false }}
       />
     </Stack.Navigator>

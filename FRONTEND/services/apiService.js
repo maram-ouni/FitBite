@@ -1,10 +1,6 @@
 import axios from 'axios';
 
- 
-
 const API_URL = 'http://192.168.56.1:5000/api'; // Replace with your actual backend URL
-
- 
 
 export const signUpUser = async (userData) => {
 
@@ -330,55 +326,30 @@ export const updateFormulaire = async (id, formData) => {
 export const updateRecipeWithIngredients = async (recipeId, { ingredients }) => {
 
   try {
-
       // Calculer la somme des calories de tous les ingrédients
-
       const totalCalories = ingredients.reduce((sum, ingredient) => {
-
           return sum + (ingredient.calorie || 0); // Si `calorie` est null ou undefined, utiliser 0
-
       }, 0);
-
       console.log(totalCalories)
-
       // Inclure la somme des calories dans la requête
-
       const response = await axios.put(
-
           `${API_URL}/recettes/${recipeId}`,
-
-          {
-
-              ingredients,
-
+          { 
+              ingredients, 
               calories: totalCalories // Ajout du champ calories
-
           },
-
           {
-
               headers: {
-
                   'Content-Type': 'application/json',
-
               },
-
           }
-
       );
-
       console.log(response);
-
       console.log(response.data);
 
- 
-
       return response.data; // Retourne la recette mise à jour
-
   } catch (error) {
-
       console.error('Error updating recipe:', error);
-
   }
 
 };
@@ -1131,4 +1102,42 @@ export const getFormulaireTrimestreById = async (userId) => {
 
   }
 
+};
+export const createMeal1 = async (userId, mealType, items) => {
+  try {
+    const response = await axios.post(`${API_URL}/auth/meals`, {
+      userId,
+      mealType,
+      items,
+    });
+    return response.data; // Return the updated user data
+  } catch (error) {
+    console.error('Error creating meal:', error);
+    throw error; // Propagate the error
+  }
+};
+
+// Function to get meals for a specific user
+export const getMealsByUser1 = async (userId) => {
+  try {
+    const response = await axios.get(`${API_URL}/auth/meals/user/${userId}`);
+    return response.data; 
+  } catch (error) {
+    console.error('Error fetching meals:', error);
+    throw error; // Propagate the error
+  }
+};
+
+// Function to update a user's meal items
+export const updateMealItems1 = async (userId, mealType, items) => {
+  try {
+    const response = await axios.put(`${API_URL}/auth/meals/${userId}`, {
+      mealType,
+      items,
+    });
+    return response.data; // Return the updated user data
+  } catch (error) {
+    console.error('Error updating meal items:', error);
+    throw error; // Propagate the error
+  }
 };
