@@ -794,7 +794,80 @@ router.put('/meals/:userId', async (req, res) => {
 });
 
 
+router.post('/meals', async (req, res) => {
+  const { userId, mealType, items } = req.body;
 
+  try {
+    // Find the user by userId
+    const user = await Utilisateur.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Add the new meal to the user's meal planning
+    user.mealPlanning.push({ mealType, items });
+
+    await user.save();
+
+    // Respond with the updated user
+    res.status(201).json(user);
+  } catch (error) {
+    console.error('Error creating meal:', error);
+    res.status(500).json({ message: 'Error creating meal', error });
+  }
+});
+
+// Route to get meals by user ID
+router.get('/meals/user/:userId', async (req, res) => {
+  const { userId } = req.params;
+
+  try {
+    const user = await Utilisateur.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    console.log(`user id: ${userId}`);
+    // Log items to check itemType and itemId
+    console.log(user.mealPlanning);
+
+    await user.populate('mealPlanning.items.itemId');
+    res.status(200).json(user.mealPlanning);
+  } catch (error) {
+    console.error('Error fetching meals:', error);
+    res.status(500).json({ message: 'Error fetching meals', error });
+  }
+});
+
+// Route to update meal items
+router.put('/meals/:userId', async (req, res) => {
+  const { userId } = req.params;
+  const { mealType, items } = req.body;
+
+  try {
+    // Find the user by userId
+    const user = await Utilisateur.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Find the meal planning entry by mealType and update it
+    const mealIndex = user.mealPlanning.findIndex(meal => meal.mealType === mealType);
+    if (mealIndex === -1) {
+      return res.status(404).json({ message: 'Meal type not found' });
+    }
+
+    // Update the items of the specified meal
+    user.mealPlanning[mealIndex].items = items;
+
+    await user.save();
+
+    // Respond with the updated user
+    res.status(200).json(user);
+  } catch (error) {
+    console.error('Error updating meal items:', error);
+    res.status(500).json({ message: 'Error updating meal items', error });
+  }
+});
 
 
 

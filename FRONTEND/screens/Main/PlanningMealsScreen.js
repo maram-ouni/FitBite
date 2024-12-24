@@ -15,6 +15,7 @@ const PlanningMealsScreen = ({ navigation }) => {
     { type: 'SNACKS', icon: require('../../assets/images/snacks.png') },
   ];
 
+
   // const handlePress = () => {
   //   navigation.navigate('RecipesScreen');  // Modifier avec le nom de l'écran de destination
   // };

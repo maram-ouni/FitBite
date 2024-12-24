@@ -13,10 +13,10 @@
 // module.exports = router;
 
 const express = require('express');
-const { 
-    inscrireUtilisateur, 
-    connecterUtilisateur, 
-    getProfilUtilisateur ,
+const {
+    inscrireUtilisateur,
+    connecterUtilisateur,
+    getProfilUtilisateur,
     getUserInfo,
 
     modifierUtilisateur,
@@ -446,7 +446,7 @@ router.get('/profile/:id', getUserInfo);
  *         description: Erreur du serveur.
 
  */
-router.put('/:id',modifierUtilisateur);
+router.put('/:id', modifierUtilisateur);
 
 /**
 
